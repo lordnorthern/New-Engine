@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "Entity.h"
 
 Engine::Engine(HINSTANCE in_hInstance)
 	:wind(in_hInstance)
@@ -137,22 +138,58 @@ bool Engine::initialize_engine()
 
 bool Engine::initScene()
 {
-	hr = D3DX11CompileFromFile(L"Effects.hlsl", 0, 0, "VS", "vs_5_0", 0, 0, 0, &VS_Buffer, 0, 0);
-	hr = D3DX11CompileFromFile(L"Effects.hlsl", 0, 0, "PS", "ps_5_0", 0, 0, 0, &PS_Buffer, 0, 0);
+	if (hr = D3DX11CompileFromFile(L"Effects.hlsl", 0, 0, "VS", "vs_5_0", 0, 0, 0, &VS_Buffer, 0, 0) != S_OK)
+	{
+		err_say(L"Failed to compile vertex buffer");
+		return false;
+	}
+	if (hr = D3DX11CompileFromFile(L"Effects.hlsl", 0, 0, "PS", "ps_5_0", 0, 0, 0, &PS_Buffer, 0, 0) != S_OK)
+	{
+		err_say(L"Failed to compile pixel buffer");
+		return false;
+	}
+
+	if (hr = d3d11Device->CreateVertexShader(VS_Buffer->GetBufferPointer(), VS_Buffer->GetBufferSize(), NULL, &VS) != S_OK)
+	{
+		err_say(L"Failed to create vertex shader");
+		return false;
+	}
+	if (hr = d3d11Device->CreatePixelShader(PS_Buffer->GetBufferPointer(), PS_Buffer->GetBufferSize(), NULL, &PS) != S_OK)
+	{
+		err_say(L"Failed to create pixel shader");
+		return false;
+	}
+
+	d3d11DevCon->VSSetShader(VS, 0, 0);
+	d3d11DevCon->PSSetShader(PS, 0, 0);
+
+	Entity * MyEntity = new Entity(this);
+	if (MyEntity->initialize())
+		Things.push_back(MyEntity);
+	else
+		delete MyEntity;
 
 	return true;
 }
 
 void Engine::updateScene()
 {
-
+	for (auto iT = Things.begin(); iT != Things.end(); iT++)
+	{
+		(*iT)->update();
+	}
 }
 
 void Engine::drawScene()
 {
-	float bgColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
+	//Clear our backbuffer
+	float bgColor[4] = { (0.0f, 0.0f, 0.0f, 0.0f) };
 	d3d11DevCon->ClearRenderTargetView(renderTargetView, bgColor);
-	d3d11DevCon->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	for (auto iT = Things.begin(); iT != Things.end(); iT++)
+	{
+		(*iT)->manifest();
+	}
 
+	//Present the backbuffer to the screen
 	SwapChain->Present(0, 0);
 }

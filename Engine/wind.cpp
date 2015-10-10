@@ -1,6 +1,6 @@
 #include "wind.h"
 
-LRESULT CALLBACK WndProc(HWND,	UINT,WPARAM,LPARAM);
+LRESULT CALLBACK WndProc(HWND,UINT,WPARAM,LPARAM);
 
 wind::wind(HINSTANCE in_hInstance)
 	:hInstance(in_hInstance)
@@ -14,7 +14,6 @@ wind::wind(HINSTANCE in_hInstance)
 wind::~wind()
 {
 }
-
 
 bool wind::initialize_window()
 {
