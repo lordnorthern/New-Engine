@@ -1,24 +1,23 @@
 #pragma once
 #include "Thing.h"
 
-struct Vertex
+struct Vertex	//Overloaded Vertex Structure
 {
 	Vertex() {}
-	Vertex(float x, float y, float z)
-		: pos(x, y, z) {}
+	Vertex(float x, float y, float z,
+		float cr, float cg, float cb, float ca)
+		: pos(x, y, z), color(cr, cg, cb, ca) {}
 
 	XMFLOAT3 pos;
+	XMFLOAT4 color;
 };
-
 
 class Entity :	public Thing
 {
 public:
-	ID3D11Buffer* triangleVertBuffer;
-	ID3D11VertexShader* VS;
-	ID3D11PixelShader* PS;
-	ID3D10Blob* VS_Buffer;
-	ID3D10Blob* PS_Buffer;
+	ID3D11Buffer* vertex_buffer;
+	ID3D11Buffer* index_buffer;
+
 	ID3D11InputLayout* vertLayout;
 
 	Entity(Engine *);

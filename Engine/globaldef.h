@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #define UNICODE
 
 #define say(X) MessageBox(0, X, X, 0)
@@ -11,6 +12,7 @@ struct sp_float2
 
 struct modifier
 {
-	float f1, f2, f3, f4, f5, f6;
-	bool b1, b2, b3;
+	std::string name;
+	bool b1,b2;
+	float f1, f2, f3, f4,f5,f6;
 };

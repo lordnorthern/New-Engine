@@ -9,26 +9,17 @@ Engine::Engine(HINSTANCE in_hInstance)
 
 Engine::~Engine()
 {
-	if(SwapChain)
-		SwapChain->Release();
-	if(d3d11Device)
-		d3d11Device->Release();
-	if(d3d11DevCon)
-		d3d11DevCon->Release();
-	if(renderTargetView)
-		renderTargetView->Release();
-	if(depthStencilView)
-		depthStencilView->Release();
-	if(depthStencilBuffer)
-		depthStencilBuffer->Release();
-	if(VS)
-		VS->Release();
-	if(PS)
-		PS->Release();
-	if(VS_Buffer)
-		VS_Buffer->Release();
-	if(PS_Buffer)
-		PS_Buffer->Release();
+	if(SwapChain)SwapChain->Release();
+	if(d3d11Device)d3d11Device->Release();
+	if(d3d11DevCon)d3d11DevCon->Release();
+	if(renderTargetView)renderTargetView->Release();
+	if(VS)VS->Release();
+	if(PS)PS->Release();
+	if(VS_Buffer)VS_Buffer->Release();
+	if(PS_Buffer)PS_Buffer->Release();
+	if(depthStencilView)depthStencilView->Release();
+	if(depthStencilBuffer)depthStencilBuffer->Release();
+	if(cbPerObjectBuffer)cbPerObjectBuffer->Release();
 }
 
 void Engine::tick()
@@ -50,7 +41,7 @@ bool Engine::initialize_engine()
 	bufferDesc.Height = window_height;
 	bufferDesc.RefreshRate.Numerator = 60;
 	bufferDesc.RefreshRate.Denominator = 1;
-	bufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	bufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	bufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	bufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 
@@ -65,70 +56,34 @@ bool Engine::initialize_engine()
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 1;
 	swapChainDesc.OutputWindow = hwnd;
-	swapChainDesc.Windowed = true;
+	swapChainDesc.Windowed = TRUE;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-	IDXGIFactory1 *DXGIFactory;
 
-	if (hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&DXGIFactory) != S_OK)
+	//Create our SwapChain
+	if(hr = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, NULL, NULL, NULL,D3D11_SDK_VERSION, &swapChainDesc, &SwapChain, &d3d11Device, NULL, &d3d11DevCon) != S_OK)
 	{
-		err_say(L"Unable to create DXGI factory");
+		err_say(L"Unable to create swap chain");
 		return false;
 	}
 
-	IDXGIAdapter1 *Adapter;
-
-	if (hr = DXGIFactory->EnumAdapters1(0, &Adapter) != S_OK)
+	//Create our BackBuffer
+	ID3D11Texture2D* BackBuffer;
+	if(hr = SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&BackBuffer) != S_OK)
 	{
-		err_say(L"Something else...");
+		err_say(L"Failed to create backbuffer");
 		return false;
 	}
 
-	DXGIFactory->Release();
-
-	if (hr = D3D11CreateDeviceAndSwapChain(Adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-		NULL, NULL, D3D11_SDK_VERSION, &swapChainDesc, &SwapChain, &d3d11Device, NULL, &d3d11DevCon) != S_OK)
+	//Create our Render Target
+	if(hr = d3d11Device->CreateRenderTargetView(BackBuffer, NULL, &renderTargetView) != S_OK)
 	{
-		err_say(L"Failed creating swap chain");
+		err_say(L"Failed to create backbuffer");
 		return false;
 	}
-	Adapter->Release();
+	BackBuffer->Release();
 
-	//Create our BackBuffer and Render Target
-	if (hr = SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&BackBuffer11) != S_OK)
-	{
-		err_say(L"Failed creating backbuffer");
-		return false;
-	}
-
-	//Describe our Depth/Stencil Buffer
-	D3D11_TEXTURE2D_DESC depthStencilDesc;
-
-	depthStencilDesc.Width = window_width;
-	depthStencilDesc.Height = window_height;
-	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.ArraySize = 1;
-	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilDesc.SampleDesc.Count = 1;
-	depthStencilDesc.SampleDesc.Quality = 0;
-	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
-	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	depthStencilDesc.CPUAccessFlags = 0;
-	depthStencilDesc.MiscFlags = 0;
-
-	//Create the Depth/Stencil View
-	if (hr = d3d11Device->CreateTexture2D(&depthStencilDesc, NULL, &depthStencilBuffer) != S_OK)
-	{
-		err_say(L"Failed to create 2d texture");
-		return false;
-	}
-
-	if (hr = d3d11Device->CreateDepthStencilView(depthStencilBuffer, NULL, &depthStencilView) != S_OK)
-	{
-		err_say(L"Failed to create depth stencil");
-		return false;
-	}
-
+	d3d11DevCon->OMSetRenderTargets(1, &renderTargetView, NULL);
 	initScene();
 	messageloop();
 	return true;
@@ -163,6 +118,62 @@ bool Engine::initScene()
 	d3d11DevCon->VSSetShader(VS, 0, 0);
 	d3d11DevCon->PSSetShader(PS, 0, 0);
 
+	//Describe our Depth/Stencil Buffer
+	D3D11_TEXTURE2D_DESC depthStencilDesc;
+
+	depthStencilDesc.Width = window_width;
+	depthStencilDesc.Height = window_height;
+	depthStencilDesc.MipLevels = 1;
+	depthStencilDesc.ArraySize = 1;
+	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilDesc.SampleDesc.Count = 1;
+	depthStencilDesc.SampleDesc.Quality = 0;
+	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthStencilDesc.CPUAccessFlags = 0;
+	depthStencilDesc.MiscFlags = 0;
+
+	//Create the Depth/Stencil View
+	d3d11Device->CreateTexture2D(&depthStencilDesc, NULL, &depthStencilBuffer);
+	d3d11Device->CreateDepthStencilView(depthStencilBuffer, NULL, &depthStencilView);
+
+	//Set our Render Target
+	d3d11DevCon->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+
+
+
+	D3D11_VIEWPORT viewport;
+	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
+
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	viewport.Width = window_width;
+	viewport.Height = window_height;
+	d3d11DevCon->RSSetViewports(1, &viewport);
+
+	//Create the buffer to send to the cbuffer in effect file
+	D3D11_BUFFER_DESC cbbd;
+	ZeroMemory(&cbbd, sizeof(D3D11_BUFFER_DESC));
+
+	cbbd.Usage = D3D11_USAGE_DEFAULT;
+	cbbd.ByteWidth = sizeof(cbPerObject);
+	cbbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbbd.CPUAccessFlags = 0;
+	cbbd.MiscFlags = 0;
+
+	hr = d3d11Device->CreateBuffer(&cbbd, NULL, &cbPerObjectBuffer);
+
+	//Camera information
+	camPosition = XMVectorSet(0.0f, 0.0f, -0.5f, 0.0f);
+	camTarget = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+	//Set the View matrix
+	camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
+
+	//Set the Projection matrix
+	camProjection = XMMatrixPerspectiveFovLH(0.4f*3.14f, (float)window_width / window_height, 1.0f, 1000.0f);
+
 	Entity * MyEntity = new Entity(this);
 	if (MyEntity->initialize())
 		Things.push_back(MyEntity);
@@ -182,14 +193,25 @@ void Engine::updateScene()
 
 void Engine::drawScene()
 {
-	//Clear our backbuffer
-	float bgColor[4] = { (0.0f, 0.0f, 0.0f, 0.0f) };
+	float bgColor[4] = {(1.0f, 0.0f, 0.0f, 0.0f)};
 	d3d11DevCon->ClearRenderTargetView(renderTargetView, bgColor);
+	d3d11DevCon->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+
+	//Set the World/View/Projection matrix, then send it to constant buffer in effect file
+	World = XMMatrixIdentity();
+
+	WVP = World * camView * camProjection;
+
+	cbPerObj.WVP = XMMatrixTranspose(WVP);
+
+	d3d11DevCon->UpdateSubresource(cbPerObjectBuffer, 0, NULL, &cbPerObj, 0, 0);
+
+	d3d11DevCon->VSSetConstantBuffers(0, 1, &cbPerObjectBuffer);
+
 	for (auto iT = Things.begin(); iT != Things.end(); iT++)
 	{
 		(*iT)->manifest();
 	}
-
-	//Present the backbuffer to the screen
 	SwapChain->Present(0, 0);
 }

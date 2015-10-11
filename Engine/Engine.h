@@ -14,6 +14,12 @@
 #include <fstream>
 #include <istream>
 
+//Create effects constant buffer's structure//
+struct cbPerObject
+{
+	XMMATRIX  WVP;
+};
+
 class Thing;
 
 class Engine :	public wind
@@ -22,6 +28,23 @@ public:
 
 	ID3D11Device* d3d11Device;
 	ID3D11DeviceContext* d3d11DevCon;
+	ID3D10Blob* VS_Buffer;
+	ID3D10Blob* PS_Buffer;
+	ID3D11VertexShader* VS;
+	ID3D11PixelShader* PS;
+	ID3D11DepthStencilView* depthStencilView;
+	ID3D11Texture2D* depthStencilBuffer;
+	ID3D11Buffer* cbPerObjectBuffer;
+	XMMATRIX WVP;
+	XMMATRIX World;
+	XMMATRIX camView;
+	XMMATRIX camProjection;
+
+	XMVECTOR camPosition;
+	XMVECTOR camTarget;
+	XMVECTOR camUp;
+
+	cbPerObject cbPerObj;
 
 	Engine(HINSTANCE);
 	~Engine();
@@ -30,15 +53,8 @@ public:
 protected:
 	IDXGISwapChain* SwapChain;
 	ID3D11Texture2D *BackBuffer11;
-	ID3D11DepthStencilView* depthStencilView;
-	ID3D11Texture2D* depthStencilBuffer;
 	ID3D11RenderTargetView* renderTargetView;
 	HRESULT hr;
-
-	ID3D10Blob* VS_Buffer;
-	ID3D10Blob* PS_Buffer;
-	ID3D11VertexShader* VS;
-	ID3D11PixelShader* PS;
 	std::vector<Thing *> Things;
 
 	void tick();
