@@ -20,6 +20,10 @@ Engine::~Engine()
 	if(depthStencilView)depthStencilView->Release();
 	if(depthStencilBuffer)depthStencilBuffer->Release();
 	if(cbPerObjectBuffer)cbPerObjectBuffer->Release();
+
+	for (auto iT = Things.begin(); iT != Things.end(); iT++)
+		delete (*iT);
+	
 }
 
 void Engine::tick()
@@ -118,7 +122,6 @@ bool Engine::initScene()
 	d3d11DevCon->VSSetShader(VS, 0, 0);
 	d3d11DevCon->PSSetShader(PS, 0, 0);
 
-	//Describe our Depth/Stencil Buffer
 	D3D11_TEXTURE2D_DESC depthStencilDesc;
 
 	depthStencilDesc.Width = window_width;
@@ -140,8 +143,6 @@ bool Engine::initScene()
 	//Set our Render Target
 	d3d11DevCon->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 
-
-
 	D3D11_VIEWPORT viewport;
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
 
@@ -161,20 +162,34 @@ bool Engine::initScene()
 	cbbd.CPUAccessFlags = 0;
 	cbbd.MiscFlags = 0;
 
-	hr = d3d11Device->CreateBuffer(&cbbd, NULL, &cbPerObjectBuffer);
+	if(hr = d3d11Device->CreateBuffer(&cbbd, NULL, &cbPerObjectBuffer) != S_OK)
+	{
+		err_say(L"Failed to create pixel shader");
+		return false;
+	}
 
-	//Camera information
-	camPosition = XMVectorSet(0.0f, 0.0f, -0.5f, 0.0f);
+	camPosition = XMVectorSet(0.0f, 3.0f, -8.0f, 0.0f);
 	camTarget = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
-	//Set the View matrix
 	camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
-
-	//Set the Projection matrix
 	camProjection = XMMatrixPerspectiveFovLH(0.4f*3.14f, (float)window_width / window_height, 1.0f, 1000.0f);
 
-	Entity * MyEntity = new Entity(this);
+	Entity * MyEntity = new Entity(this, 1);
+	modifier mod;
+	mod.name = "POSITION";
+	mod.f1 = -3.0f;
+	MyEntity->modify(mod);
+	if (MyEntity->initialize())
+		Things.push_back(MyEntity);
+	else
+		delete MyEntity;
+
+
+	MyEntity = new Entity(this, 2);
+	mod;
+	mod.name = "POSITION";
+	mod.f2 = 1.0f;
+	MyEntity->modify(mod);
 	if (MyEntity->initialize())
 		Things.push_back(MyEntity);
 	else
@@ -185,8 +200,28 @@ bool Engine::initScene()
 
 void Engine::updateScene()
 {
+	rot += 0.0001f;
+	if (rot > 6.28f)
+		rot = 0.0f;
+
+	SetWindowText(hwnd, std::to_wstring(rot).c_str());
+	World = XMMatrixIdentity();
+	WVP = World * camView * camProjection;
+	cbPerObj.WVP = XMMatrixTranspose(WVP);
+	d3d11DevCon->UpdateSubresource(cbPerObjectBuffer, 0, NULL, &cbPerObj, 0, 0);
+	d3d11DevCon->VSSetConstantBuffers(0, 1, &cbPerObjectBuffer);
+
+	modifier shmot;
+	shmot.name = "POSITION";
+	shmot.f1 = rot;
+	shmot.f2 = 0;
+	shmot.f3= 0;
+
 	for (auto iT = Things.begin(); iT != Things.end(); iT++)
 	{
+		if((*iT)->id==1)
+			(*iT)->modify(shmot);
+
 		(*iT)->update();
 	}
 }
@@ -196,19 +231,7 @@ void Engine::drawScene()
 	float bgColor[4] = {(1.0f, 0.0f, 0.0f, 0.0f)};
 	d3d11DevCon->ClearRenderTargetView(renderTargetView, bgColor);
 	d3d11DevCon->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-
-	//Set the World/View/Projection matrix, then send it to constant buffer in effect file
-	World = XMMatrixIdentity();
-
-	WVP = World * camView * camProjection;
-
-	cbPerObj.WVP = XMMatrixTranspose(WVP);
-
-	d3d11DevCon->UpdateSubresource(cbPerObjectBuffer, 0, NULL, &cbPerObj, 0, 0);
-
-	d3d11DevCon->VSSetConstantBuffers(0, 1, &cbPerObjectBuffer);
-
+	
 	for (auto iT = Things.begin(); iT != Things.end(); iT++)
 	{
 		(*iT)->manifest();

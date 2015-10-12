@@ -10,9 +10,10 @@
 class Thing
 {
 public:
+	int id;
 	Engine * engine_obj;
 
-	Thing(Engine *);
+	Thing(Engine *,int);
 	~Thing();
 
 	virtual bool initialize() = 0;

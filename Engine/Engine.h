@@ -14,7 +14,6 @@
 #include <fstream>
 #include <istream>
 
-//Create effects constant buffer's structure//
 struct cbPerObject
 {
 	XMMATRIX  WVP;
@@ -25,6 +24,7 @@ class Thing;
 class Engine :	public wind
 {
 public:
+	float rot;
 
 	ID3D11Device* d3d11Device;
 	ID3D11DeviceContext* d3d11DevCon;

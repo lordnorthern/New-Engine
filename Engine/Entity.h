@@ -15,20 +15,24 @@ struct Vertex	//Overloaded Vertex Structure
 class Entity :	public Thing
 {
 public:
-	ID3D11Buffer* vertex_buffer;
-	ID3D11Buffer* index_buffer;
-
-	ID3D11InputLayout* vertLayout;
-
-	Entity(Engine *);
+	Entity(Engine *,int);
 	~Entity();
 
-	virtual bool initialize();
-	virtual bool modify(modifier);
-	virtual void update();
-	virtual void manifest();
+	bool initialize();
+	bool modify(modifier);
+	void update();
+	void manifest();
 
 protected:
+	ID3D11Buffer* vertex_buffer;
+	ID3D11Buffer* index_buffer;
+	XMMATRIX world_matrix;
+	XMMATRIX Rotation;
+	XMMATRIX Scale;
+	XMMATRIX Translation;
+	ID3D11InputLayout* vertLayout;
 
+	sp_float3 position;
+	sp_float3 scale;
 };
 
