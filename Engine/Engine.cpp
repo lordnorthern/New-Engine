@@ -1,6 +1,7 @@
 #include "Engine.h"
 #include "Entity.h"
 #include "RenderState.h"
+#include "Ground.h"
 
 Engine::Engine(HINSTANCE in_hInstance)
 	:wind(in_hInstance)
@@ -230,6 +231,25 @@ bool Engine::initScene()
 	else
 		delete MyEntity;
 
+	MyEntity = new Ground(this, 3, L"gate1.png");
+	MyEntity->render_state = "no_cull";
+	mod.name = "POSITION";
+	mod.f3 = -3.0f;
+	MyEntity->modify(mod);
+	mod.refresh();
+	mod.name = "ROTATION";
+	mod.f1 = 0.000001f;
+	mod.f2 = 1.0f;
+	mod.f3 = 0.0f;
+	mod.f4 = 0.0f;
+	mod.f5 = 0.0f;
+
+	MyEntity->modify(mod);
+	if (MyEntity->initialize())
+		Things.push_back(MyEntity);
+	else
+		delete MyEntity;
+
 	return true;
 }
 
@@ -338,25 +358,42 @@ double Engine::GetFrameTime()
 
 bool Engine::InitDirectInput(HINSTANCE hInstance)
 {
-	hr = DirectInput8Create(hInstance,
-		DIRECTINPUT_VERSION,
-		IID_IDirectInput8,
-		(void**)&DirectInput,
-		NULL);
+	if (hr = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&DirectInput, NULL) != S_OK)
+	{
+		err_say(L"Failed to create direct input");
+		return false;
+	}
 
-	hr = DirectInput->CreateDevice(GUID_SysKeyboard,
-		&DIKeyboard,
-		NULL);
-
-	hr = DirectInput->CreateDevice(GUID_SysMouse,
-		&DIMouse,
-		NULL);
-
-	hr = DIKeyboard->SetDataFormat(&c_dfDIKeyboard);
-	hr = DIKeyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
-
-	hr = DIMouse->SetDataFormat(&c_dfDIMouse);
-	hr = DIMouse->SetCooperativeLevel(hwnd, DISCL_EXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND);
+	if(hr = DirectInput->CreateDevice(GUID_SysKeyboard,&DIKeyboard,NULL) != S_OK)
+	{
+		err_say(L"Failed to create keyboard device");
+		return false;
+	}
+	if(hr = DirectInput->CreateDevice(GUID_SysMouse,&DIMouse,NULL) != S_OK)
+	{
+		err_say(L"Failed to create mouse device");
+		return false;
+	}
+	if (hr = DIKeyboard->SetDataFormat(&c_dfDIKeyboard) != S_OK)
+	{
+		err_say(L"Failed to set data format for the keyboard");
+		return false;
+	}
+	if (hr = DIKeyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE) != S_OK)
+	{
+		err_say(L"Failed to set cooperative level for the keyboard");
+		return false;
+	}
+	if (hr = DIMouse->SetDataFormat(&c_dfDIMouse) != S_OK)
+	{
+		err_say(L"Failed to set data format for the mouse");
+		return false;
+	}
+	if (hr = DIMouse->SetCooperativeLevel(hwnd, DISCL_EXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND) != S_OK)
+	{
+		err_say(L"Failed to set cooperative level for the mouse");
+		return false;
+	}
 
 	return true;
 }

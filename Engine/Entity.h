@@ -20,7 +20,7 @@ public:
 	LPCWSTR texture_name;
 	std::string render_state;
 	Entity(Engine *,int,LPCWSTR);
-	~Entity();
+	virtual ~Entity();
 
 	bool initialize();
 	bool modify(modifier);
