@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <map>
 #define UNICODE
 
 #define say(X) MessageBox(0, X, X, 0)

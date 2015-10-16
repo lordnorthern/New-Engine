@@ -1,5 +1,7 @@
 #pragma once
+
 #include "Thing.h"
+
 
 struct Vertex	//Overloaded Vertex Structure
 {
@@ -16,7 +18,7 @@ class Entity :	public Thing
 {
 public:
 	LPCWSTR texture_name;
-
+	std::string render_state;
 	Entity(Engine *,int,LPCWSTR);
 	~Entity();
 
@@ -39,5 +41,6 @@ protected:
 	sp_float5 rotation_pos;
 	ID3D11ShaderResourceView* texture;
 	ID3D11SamplerState* sampler_state;
+
 };
 

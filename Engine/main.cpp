@@ -1,4 +1,5 @@
-#define _CRTDBG_MAP_ALLOC
+#define _CRTDBG_MAPALLOC
+
 #include <stdlib.h>
 #include <crtdbg.h>
 #include "globaldef.h"

@@ -13,6 +13,9 @@
 #include <vector>
 #include <fstream>
 #include <istream>
+#include <dinput.h>
+
+class RenderState;
 
 struct cbPerObject
 {
@@ -39,15 +42,14 @@ public:
 	XMMATRIX World;
 	XMMATRIX camView;
 	XMMATRIX camProjection;
-
 	XMVECTOR camPosition;
 	XMVECTOR camTarget;
 	XMVECTOR camUp;
-
 	modifier mod;
-
 	cbPerObject cbPerObj;
-
+	std::map<std::string, RenderState*> render_states;
+	IDirectInputDevice8* DIKeyboard;
+	IDirectInputDevice8* DIMouse;
 	Engine(HINSTANCE);
 	~Engine();
 
@@ -59,9 +61,48 @@ protected:
 	HRESULT hr;
 	std::vector<Thing *> Things;
 
+
+	DIMOUSESTATE mouseLastState;
+	LPDIRECTINPUT8 DirectInput;
+
+	XMVECTOR DefaultForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+	XMVECTOR DefaultRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR camForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+	XMVECTOR camRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR DefaultUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	XMVECTOR camUp2 = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+	XMMATRIX camRotationMatrix;
+	XMMATRIX groundWorld;
+
+	float moveLeftRight = 0.0f;
+	float moveBackForward = 0.0f;
+	float moveUpDown = 0.0f;
+
+	float camYaw = 0.0f;
+	float camPitch = 0.0f;
+
+	float rotx = 0;
+	float rotz = 0;
+	float scaleX = 1.0f;
+	float scaleY = 1.0f;
+
+	XMMATRIX Rotationx;
+	XMMATRIX Rotationz;
+
 	void tick();
 	bool initScene();
 	void updateScene();
 	void drawScene();
+	void UpdateCamera();
+
+	void StartTimer();
+	double GetTime();
+	double GetFrameTime();
+
+	bool InitDirectInput(HINSTANCE);
+	void DetectInput();
+private:
+	void initializeRenderState();
 };
 

@@ -133,6 +133,7 @@
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="RenderState.cpp" />
     <ClCompile Include="Thing.cpp" />
     <ClCompile Include="wind.cpp" />
   </ItemGroup>
@@ -140,6 +141,7 @@
     <ClInclude Include="Engine.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="globaldef.h" />
+    <ClInclude Include="RenderState.h" />
     <ClInclude Include="Thing.h" />
     <ClInclude Include="wind.h" />
   </ItemGroup>

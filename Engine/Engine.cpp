@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include "Entity.h"
+#include "RenderState.h"
 
 Engine::Engine(HINSTANCE in_hInstance)
 	:wind(in_hInstance)
@@ -20,14 +21,31 @@ Engine::~Engine()
 	if(depthStencilView)depthStencilView->Release();
 	if(depthStencilBuffer)depthStencilBuffer->Release();
 	if(cbPerObjectBuffer)cbPerObjectBuffer->Release();
+	if(DIKeyboard)DIKeyboard->Unacquire();
+	if(DIMouse)DIMouse->Unacquire();
+	if(DirectInput)DirectInput->Release();
 
 	for (auto iT = Things.begin(); iT != Things.end(); iT++)
+	{
 		delete (*iT);
-	
+	}
+
+	for (auto iT = render_states.begin(); iT != render_states.end(); iT++)
+		delete (*iT).second;
 }
 
 void Engine::tick()
 {
+	frameCount++;
+	if (GetTime() > 1.0f)
+	{
+		fps = frameCount;
+		frameCount = 0;
+		StartTimer();
+	}
+
+	frameTime = GetFrameTime();
+	DetectInput();
 	updateScene();
 	drawScene();
 }
@@ -87,6 +105,12 @@ bool Engine::initialize_engine()
 	}
 	BackBuffer->Release();
 
+	if (!InitDirectInput(hInstance))
+	{
+		MessageBox(0, L"Direct Input Initialization - Failed",L"Error", MB_OK);
+		return 0;
+	}
+
 	d3d11DevCon->OMSetRenderTargets(1, &renderTargetView, NULL);
 	initScene();
 	messageloop();
@@ -122,7 +146,7 @@ bool Engine::initScene()
 	d3d11DevCon->VSSetShader(VS, 0, 0);
 	d3d11DevCon->PSSetShader(PS, 0, 0);
 
-	//Describe our Depth/Stencil Buffer
+	initializeRenderState();
 	D3D11_TEXTURE2D_DESC depthStencilDesc;
 
 	depthStencilDesc.Width = window_width;
@@ -143,6 +167,7 @@ bool Engine::initScene()
 
 	//Set our Render Target
 	d3d11DevCon->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+
 
 	D3D11_VIEWPORT viewport;
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
@@ -179,7 +204,8 @@ bool Engine::initScene()
 	
 	
 
-	Entity * MyEntity = new Entity(this, 2, L"braynzar.jpg");
+	Entity * MyEntity = new Entity(this, 2, L"gate1.png");
+	MyEntity->render_state = "no_cull";
 	mod.name = "POSITION";
 	mod.f3 = 3.0f;
 	MyEntity->modify(mod);
@@ -197,7 +223,7 @@ bool Engine::initScene()
 	else
 		delete MyEntity;
 		
-	MyEntity = new Entity(this, 1,L"braynzar.jpg");
+	MyEntity = new Entity(this, 1, L"braynzar.jpg");
 	MyEntity->modify(mod);
 	if (MyEntity->initialize())
 		Things.push_back(MyEntity);
@@ -209,11 +235,15 @@ bool Engine::initScene()
 
 void Engine::updateScene()
 {
-	rot += 0.0004f;
+	rot += 1.0f * frameTime;
 	if (rot > 6.28f)
 		rot = 0.0f;
 
-	SetWindowText(hwnd, std::to_wstring(rot).c_str());
+	SetWindowText(hwnd, std::to_wstring(fps).c_str());
+
+
+
+
 	World = XMMatrixIdentity();
 	WVP = World * camView * camProjection;
 	cbPerObj.WVP = XMMatrixTranspose(WVP);
@@ -248,4 +278,141 @@ void Engine::drawScene()
 		(*iT)->manifest();
 	}
 	SwapChain->Present(0, 0);
+}
+
+void Engine::UpdateCamera()
+{
+	camRotationMatrix = XMMatrixRotationRollPitchYaw(camPitch, camYaw, 0);
+	camTarget = XMVector3TransformCoord(DefaultForward, camRotationMatrix);
+	camTarget = XMVector3Normalize(camTarget);
+
+	XMMATRIX RotateYTempMatrix;
+	RotateYTempMatrix = XMMatrixRotationY(camYaw);
+	camRight = XMVector3TransformCoord(DefaultRight, RotateYTempMatrix);
+	camForward = XMVector3TransformCoord(DefaultForward, RotateYTempMatrix);
+
+	camUp2 = XMVector3TransformCoord(DefaultUp, RotateYTempMatrix);
+
+	camPosition += moveLeftRight*camRight;
+	camPosition += moveBackForward*camForward;
+	camPosition += (moveBackForward)*camUp2 * (camPitch*-1);
+	moveLeftRight = 0.0f;
+	moveBackForward = 0.0f;
+	moveUpDown = 0.0f;
+	camTarget = camPosition + camTarget;
+	camView = XMMatrixLookAtLH(camPosition, camTarget, camUp2);
+}
+
+void Engine::StartTimer()
+{
+	LARGE_INTEGER frequencyCount;
+	QueryPerformanceFrequency(&frequencyCount);
+
+	countsPerSecond = double(frequencyCount.QuadPart);
+
+	QueryPerformanceCounter(&frequencyCount);
+	CounterStart = frequencyCount.QuadPart;
+}
+
+double Engine::GetTime()
+{
+	LARGE_INTEGER currentTime;
+	QueryPerformanceCounter(&currentTime);
+	return double(currentTime.QuadPart - CounterStart) / countsPerSecond;
+}
+
+double Engine::GetFrameTime()
+{
+	LARGE_INTEGER currentTime;
+	__int64 tickCount;
+	QueryPerformanceCounter(&currentTime);
+
+	tickCount = currentTime.QuadPart - frameTimeOld;
+	frameTimeOld = currentTime.QuadPart;
+
+	if (tickCount < 0.0f)
+		tickCount = 0.0f;
+
+	return float(tickCount) / countsPerSecond;
+}
+
+bool Engine::InitDirectInput(HINSTANCE hInstance)
+{
+	hr = DirectInput8Create(hInstance,
+		DIRECTINPUT_VERSION,
+		IID_IDirectInput8,
+		(void**)&DirectInput,
+		NULL);
+
+	hr = DirectInput->CreateDevice(GUID_SysKeyboard,
+		&DIKeyboard,
+		NULL);
+
+	hr = DirectInput->CreateDevice(GUID_SysMouse,
+		&DIMouse,
+		NULL);
+
+	hr = DIKeyboard->SetDataFormat(&c_dfDIKeyboard);
+	hr = DIKeyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+
+	hr = DIMouse->SetDataFormat(&c_dfDIMouse);
+	hr = DIMouse->SetCooperativeLevel(hwnd, DISCL_EXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND);
+
+	return true;
+}
+
+void Engine::DetectInput()
+{
+	DIMOUSESTATE mouseCurrState;
+
+	BYTE keyboardState[256];
+
+	DIKeyboard->Acquire();
+	DIMouse->Acquire();
+
+	DIMouse->GetDeviceState(sizeof(DIMOUSESTATE), &mouseCurrState);
+
+	DIKeyboard->GetDeviceState(sizeof(keyboardState), (LPVOID)&keyboardState);
+
+	if (keyboardState[DIK_ESCAPE] & 0x80)
+		PostMessage(hwnd, WM_DESTROY, 0, 0);
+
+	float speed = 15.0f * frameTime;
+
+	if (keyboardState[DIK_A] & 0x80)
+	{
+		moveLeftRight -= speed;
+	}
+	if (keyboardState[DIK_D] & 0x80)
+	{
+		moveLeftRight += speed;
+	}
+	if (keyboardState[DIK_W] & 0x80)
+	{
+		moveBackForward += speed;
+	}
+	if (keyboardState[DIK_S] & 0x80)
+	{
+		moveBackForward -= speed;
+	}
+	if ((mouseCurrState.lX != mouseLastState.lX) || (mouseCurrState.lY != mouseLastState.lY))
+	{
+		camYaw += mouseLastState.lX * 0.001f;
+
+		camPitch += mouseCurrState.lY * 0.001f;
+
+		mouseLastState = mouseCurrState;
+	}
+
+	UpdateCamera();
+}
+
+
+void Engine::initializeRenderState()
+{
+	RenderState * tmp = new RenderState(this);
+	tmp->rastDesc.FillMode = D3D11_FILL_SOLID;
+	tmp->rastDesc.CullMode = D3D11_CULL_NONE;
+	tmp->set();
+	render_states["no_cull"] = tmp;
 }
