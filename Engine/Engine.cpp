@@ -4,7 +4,7 @@
 Engine::Engine(HINSTANCE in_hInstance)
 	:wind(in_hInstance)
 {
-
+	mod.refresh();
 }
 
 Engine::~Engine()
@@ -122,6 +122,7 @@ bool Engine::initScene()
 	d3d11DevCon->VSSetShader(VS, 0, 0);
 	d3d11DevCon->PSSetShader(PS, 0, 0);
 
+	//Describe our Depth/Stencil Buffer
 	D3D11_TEXTURE2D_DESC depthStencilDesc;
 
 	depthStencilDesc.Width = window_width;
@@ -146,6 +147,8 @@ bool Engine::initScene()
 	D3D11_VIEWPORT viewport;
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
 
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
 	viewport.Width = window_width;
@@ -173,22 +176,28 @@ bool Engine::initScene()
 	camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
 	camProjection = XMMatrixPerspectiveFovLH(0.4f*3.14f, (float)window_width / window_height, 1.0f, 1000.0f);
+	
+	
 
-	Entity * MyEntity = new Entity(this, 1);
-	modifier mod;
+	Entity * MyEntity = new Entity(this, 2, L"braynzar.jpg");
 	mod.name = "POSITION";
-	mod.f1 = -3.0f;
+	mod.f3 = 3.0f;
+	MyEntity->modify(mod);
+	mod.refresh();
+	mod.name = "ROTATION";
+	mod.f1 = 0.000001f;
+	mod.f2 = 1.0f;
+	mod.f3 = 0.0f;
+	mod.f4 = 0.0f;
+	mod.f5 = 0.0f;
+
 	MyEntity->modify(mod);
 	if (MyEntity->initialize())
 		Things.push_back(MyEntity);
 	else
 		delete MyEntity;
-
-
-	MyEntity = new Entity(this, 2);
-	mod;
-	mod.name = "POSITION";
-	mod.f2 = 1.0f;
+		
+	MyEntity = new Entity(this, 1,L"braynzar.jpg");
 	MyEntity->modify(mod);
 	if (MyEntity->initialize())
 		Things.push_back(MyEntity);
@@ -200,7 +209,7 @@ bool Engine::initScene()
 
 void Engine::updateScene()
 {
-	rot += 0.0001f;
+	rot += 0.0004f;
 	if (rot > 6.28f)
 		rot = 0.0f;
 
@@ -211,17 +220,19 @@ void Engine::updateScene()
 	d3d11DevCon->UpdateSubresource(cbPerObjectBuffer, 0, NULL, &cbPerObj, 0, 0);
 	d3d11DevCon->VSSetConstantBuffers(0, 1, &cbPerObjectBuffer);
 
-	modifier shmot;
-	shmot.name = "POSITION";
-	shmot.f1 = rot;
-	shmot.f2 = 0;
-	shmot.f3= 0;
 
 	for (auto iT = Things.begin(); iT != Things.end(); iT++)
 	{
-		if((*iT)->id==1)
-			(*iT)->modify(shmot);
 
+		if ((*iT)->id == 2)
+		{
+			mod.refresh();
+			mod.name = "ROTATION";
+			mod.f5 = rot;
+			(*iT)->modify(mod);
+
+
+		}
 		(*iT)->update();
 	}
 }

@@ -44,6 +44,8 @@ public:
 	XMVECTOR camTarget;
 	XMVECTOR camUp;
 
+	modifier mod;
+
 	cbPerObject cbPerObj;
 
 	Engine(HINSTANCE);

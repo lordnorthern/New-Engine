@@ -11,6 +11,16 @@ public:
 	int window_width;
 	int window_height;
 
+	double countsPerSecond = 0.0;
+	__int64 CounterStart = 0;
+
+	int frameCount = 0;
+	int fps = 0;
+
+	__int64 frameTimeOld = 0;
+	double frameTime;
+
+
 	wind(HINSTANCE);
 	~wind();
 
@@ -21,4 +31,3 @@ protected:
 	HWND hwnd;
 	virtual void tick();
 };
-

@@ -12,7 +12,7 @@ class Thing
 public:
 	int id;
 	Engine * engine_obj;
-
+	
 	Thing(Engine *,int);
 	~Thing();
 

@@ -5,17 +5,19 @@ struct Vertex	//Overloaded Vertex Structure
 {
 	Vertex() {}
 	Vertex(float x, float y, float z,
-		float cr, float cg, float cb, float ca)
-		: pos(x, y, z), color(cr, cg, cb, ca) {}
+		float u, float v)
+		: pos(x, y, z), texCoord(u, v) {}
 
 	XMFLOAT3 pos;
-	XMFLOAT4 color;
+	XMFLOAT2 texCoord;
 };
 
 class Entity :	public Thing
 {
 public:
-	Entity(Engine *,int);
+	LPCWSTR texture_name;
+
+	Entity(Engine *,int,LPCWSTR);
 	~Entity();
 
 	bool initialize();
@@ -32,7 +34,10 @@ protected:
 	XMMATRIX Translation;
 	ID3D11InputLayout* vertLayout;
 
-	sp_float3 position;
-	sp_float3 scale;
+	sp_float3 position_pos;
+	sp_float3 scale_pos;
+	sp_float5 rotation_pos;
+	ID3D11ShaderResourceView* texture;
+	ID3D11SamplerState* sampler_state;
 };
 
