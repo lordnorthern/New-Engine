@@ -231,20 +231,20 @@ bool Engine::initScene()
 	else
 		delete MyEntity;
 
-	MyEntity = new Ground(this, 3, L"gate1.png");
+	MyEntity = new Ground(this, 3, L"grass.jpg");
 	MyEntity->render_state = "no_cull";
+	mod.refresh();
 	mod.name = "POSITION";
-	mod.f3 = -3.0f;
+	mod.f2 = -1.0f;
 	MyEntity->modify(mod);
 	mod.refresh();
-	mod.name = "ROTATION";
-	mod.f1 = 0.000001f;
-	mod.f2 = 1.0f;
-	mod.f3 = 0.0f;
-	mod.f4 = 0.0f;
-	mod.f5 = 0.0f;
+	mod.name = "SCALE";
+	mod.f1 = 500.0f;
+	mod.f2 = 0.0f;
+	mod.f3 = 500.0f;
 
 	MyEntity->modify(mod);
+
 	if (MyEntity->initialize())
 		Things.push_back(MyEntity);
 	else
@@ -410,10 +410,7 @@ void Engine::DetectInput()
 	DIMouse->GetDeviceState(sizeof(DIMOUSESTATE), &mouseCurrState);
 
 	DIKeyboard->GetDeviceState(sizeof(keyboardState), (LPVOID)&keyboardState);
-
-	if (keyboardState[DIK_ESCAPE] & 0x80)
-		PostMessage(hwnd, WM_DESTROY, 0, 0);
-
+	
 	float speed = 15.0f * frameTime;
 
 	if (keyboardState[DIK_A] & 0x80)

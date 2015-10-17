@@ -7,5 +7,7 @@ public:
 
 	Ground(Engine *, int, LPCWSTR);
 	virtual ~Ground();
+	bool initialize();
+	void manifest();
 };
 
