@@ -275,6 +275,9 @@ bool Engine::initScene()
 		delete MyEntity;
 
 	LightSource * MyLight = new LightSource(this, 5);
+	MyLight->direction = { 0.25f, 0.6f, 1.0f };
+	MyLight->ambient = { 0.2f, 0.2f, 0.2f, 1.0f };
+	MyLight->diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	if (MyLight->initialize())
 		Things.push_back(MyLight);
 	else

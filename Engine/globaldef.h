@@ -8,21 +8,37 @@
 
 struct sp_float2
 {
+	void refresh()
+	{
+		a = 0.0f; b = 0.0f;
+	}
 	float a, b;
 };
 
 struct sp_float3
 {
+	void refresh()
+	{
+		a = 0.0f; b = 0.0f; c = 0.0f;
+	}
 	float a, b, c;
 };
 
 struct sp_float4
 {
+	void refresh()
+	{
+		a = 0.0f; b = 0.0f; c = 0.0f; d = 0.0f;
+	}
 	float a, b, c, d;
 };
 
 struct sp_float5
 {
+	void refresh()
+	{
+		a = 0.0f; b = 0.0f; c = 0.0f; d = 0.0f; e = 0.0f;
+	}
 	float a, b, c, d, e;
 };
 
