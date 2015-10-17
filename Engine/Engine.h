@@ -20,6 +20,24 @@ class RenderState;
 struct cbPerObject
 {
 	XMMATRIX  WVP;
+	XMMATRIX  World;
+};
+
+struct Light
+{
+	Light()
+	{
+		ZeroMemory(this, sizeof(Light));
+	}
+	XMFLOAT3 dir;
+	float pad;
+	XMFLOAT4 ambient;
+	XMFLOAT4 diffuse;
+};
+
+struct cbPerFrame
+{
+	Light  light;
 };
 
 class Thing;
@@ -38,6 +56,9 @@ public:
 	ID3D11DepthStencilView* depthStencilView;
 	ID3D11Texture2D* depthStencilBuffer;
 	ID3D11Buffer* cbPerObjectBuffer;
+	
+	cbPerFrame constbuffPerFrame;
+
 	XMMATRIX WVP;
 	XMMATRIX World;
 	XMMATRIX camView;
@@ -47,6 +68,11 @@ public:
 	XMVECTOR camUp;
 	modifier mod;
 	cbPerObject cbPerObj;
+	ID3D11Buffer* cbPerFrameBuffer;
+	ID3D11PixelShader* D2D_PS;
+	ID3D10Blob* D2D_PS_Buffer;
+
+
 	std::map<std::string, RenderState*> render_states;
 	IDirectInputDevice8* DIKeyboard;
 	IDirectInputDevice8* DIMouse;

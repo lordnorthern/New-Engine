@@ -2,6 +2,7 @@
 #include "Entity.h"
 #include "RenderState.h"
 #include "Ground.h"
+#include "LightSource.h"
 
 Engine::Engine(HINSTANCE in_hInstance)
 	:wind(in_hInstance)
@@ -25,6 +26,7 @@ Engine::~Engine()
 	if(DIKeyboard)DIKeyboard->Unacquire();
 	if(DIMouse)DIMouse->Unacquire();
 	if(DirectInput)DirectInput->Release();
+	if(cbPerFrameBuffer)cbPerFrameBuffer->Release();
 
 	for (auto iT = Things.begin(); iT != Things.end(); iT++)
 	{
@@ -124,12 +126,18 @@ bool Engine::initScene()
 {
 	if (hr = D3DX11CompileFromFile(L"Effects.hlsl", 0, 0, "VS", "vs_5_0", 0, 0, 0, &VS_Buffer, 0, 0) != S_OK)
 	{
-		err_say(L"Failed to compile vertex buffer");
+		err_say(L"Failed to compile vertex shader");
 		return false;
 	}
 	if (hr = D3DX11CompileFromFile(L"Effects.hlsl", 0, 0, "PS", "ps_5_0", 0, 0, 0, &PS_Buffer, 0, 0) != S_OK)
 	{
-		err_say(L"Failed to compile pixel buffer");
+		err_say(L"Failed to compile pixel shader");
+		return false;
+	}
+
+	if (hr = D3DX11CompileFromFile(L"Effects.hlsl", 0, 0, "D2D_PS", "ps_5_0", 0, 0, 0, &D2D_PS_Buffer, 0, 0) != S_OK)
+	{
+		err_say(L"Failed to compile D2D shader");
 		return false;
 	}
 
@@ -143,6 +151,13 @@ bool Engine::initScene()
 		err_say(L"Failed to create pixel shader");
 		return false;
 	}
+
+	if (hr = d3d11Device->CreatePixelShader(D2D_PS_Buffer->GetBufferPointer(), D2D_PS_Buffer->GetBufferSize(), NULL, &D2D_PS) != S_OK)
+	{
+		err_say(L"Failed to create D2D shader");
+		return false;
+	}
+
 
 	d3d11DevCon->VSSetShader(VS, 0, 0);
 	d3d11DevCon->PSSetShader(PS, 0, 0);
@@ -197,16 +212,25 @@ bool Engine::initScene()
 		return false;
 	}
 
-	camPosition = XMVectorSet(0.0f, 3.0f, -8.0f, 0.0f);
+
+	ZeroMemory(&cbbd, sizeof(D3D11_BUFFER_DESC));
+
+	cbbd.Usage = D3D11_USAGE_DEFAULT;
+	cbbd.ByteWidth = sizeof(cbPerFrame);
+	cbbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbbd.CPUAccessFlags = 0;
+	cbbd.MiscFlags = 0;
+
+	hr = d3d11Device->CreateBuffer(&cbbd, NULL, &cbPerFrameBuffer);
+	camPosition = XMVectorSet(0.0f, 0.0f, -8.0f, 0.0f);
 	camTarget = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
 	camProjection = XMMatrixPerspectiveFovLH(0.4f*3.14f, (float)window_width / window_height, 1.0f, 1000.0f);
-	
-	
 
 	Entity * MyEntity = new Entity(this, 2, L"gate1.png");
 	MyEntity->render_state = "no_cull";
+	mod.refresh();
 	mod.name = "POSITION";
 	mod.f3 = 3.0f;
 	MyEntity->modify(mod);
@@ -250,6 +274,12 @@ bool Engine::initScene()
 	else
 		delete MyEntity;
 
+	LightSource * MyLight = new LightSource(this, 5);
+	if (MyLight->initialize())
+		Things.push_back(MyLight);
+	else
+		delete MyLight;
+
 	return true;
 }
 
@@ -260,17 +290,6 @@ void Engine::updateScene()
 		rot = 0.0f;
 
 	SetWindowText(hwnd, std::to_wstring(fps).c_str());
-
-
-
-
-	World = XMMatrixIdentity();
-	WVP = World * camView * camProjection;
-	cbPerObj.WVP = XMMatrixTranspose(WVP);
-	d3d11DevCon->UpdateSubresource(cbPerObjectBuffer, 0, NULL, &cbPerObj, 0, 0);
-	d3d11DevCon->VSSetConstantBuffers(0, 1, &cbPerObjectBuffer);
-
-
 	for (auto iT = Things.begin(); iT != Things.end(); iT++)
 	{
 
@@ -292,7 +311,10 @@ void Engine::drawScene()
 	float bgColor[4] = {(1.0f, 0.0f, 0.0f, 0.0f)};
 	d3d11DevCon->ClearRenderTargetView(renderTargetView, bgColor);
 	d3d11DevCon->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-	
+
+	d3d11DevCon->VSSetShader(VS, 0, 0);
+	d3d11DevCon->PSSetShader(PS, 0, 0);
+
 	for (auto iT = Things.begin(); iT != Things.end(); iT++)
 	{
 		(*iT)->manifest();

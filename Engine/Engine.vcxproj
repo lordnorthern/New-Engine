@@ -133,6 +133,7 @@
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="Ground.cpp" />
+    <ClCompile Include="LightSource.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RenderState.cpp" />
     <ClCompile Include="Thing.cpp" />
@@ -143,6 +144,7 @@
     <ClInclude Include="Entity.h" />
     <ClInclude Include="globaldef.h" />
     <ClInclude Include="Ground.h" />
+    <ClInclude Include="LightSource.h" />
     <ClInclude Include="RenderState.h" />
     <ClInclude Include="Thing.h" />
     <ClInclude Include="wind.h" />

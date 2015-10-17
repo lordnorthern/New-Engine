@@ -11,6 +11,5 @@ public:
 	RenderState(Engine *);
 	~RenderState();
 	void set();
-
 };
 

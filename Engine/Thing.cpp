@@ -8,4 +8,5 @@ Thing::Thing(Engine * in_engine_obj,int in_id)
 
 Thing::~Thing()
 {
+
 }
