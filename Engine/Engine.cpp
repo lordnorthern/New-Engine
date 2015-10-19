@@ -7,7 +7,7 @@
 Engine::Engine(HINSTANCE in_hInstance)
 	:wind(in_hInstance)
 {
-	mod.refresh();
+	mod.refresh("");
 }
 
 Engine::~Engine()
@@ -230,12 +230,10 @@ bool Engine::initScene()
 
 	Entity * MyEntity = new Entity(this, 2, L"gate1.png");
 	MyEntity->render_state = "no_cull";
-	mod.refresh();
-	mod.name = "POSITION";
+	mod.refresh("POSITION");
 	mod.f3 = 3.0f;
 	MyEntity->modify(mod);
-	mod.refresh();
-	mod.name = "ROTATION";
+	mod.refresh("ROTATION");
 	mod.f1 = 0.000001f;
 	mod.f2 = 1.0f;
 	mod.f3 = 0.0f;
@@ -257,12 +255,10 @@ bool Engine::initScene()
 
 	MyEntity = new Ground(this, 3, L"grass.jpg");
 	MyEntity->render_state = "no_cull";
-	mod.refresh();
-	mod.name = "POSITION";
+	mod.refresh("POSITION");
 	mod.f2 = -1.0f;
 	MyEntity->modify(mod);
-	mod.refresh();
-	mod.name = "SCALE";
+	mod.refresh("SCALE");
 	mod.f1 = 500.0f;
 	mod.f2 = 0.0f;
 	mod.f3 = 500.0f;
@@ -288,7 +284,7 @@ bool Engine::initScene()
 
 void Engine::updateScene()
 {
-	rot += 1.0f * frameTime;
+	rot += 2.5f * frameTime;
 	if (rot > 6.28f)
 		rot = 0.0f;
 
@@ -298,12 +294,9 @@ void Engine::updateScene()
 
 		if ((*iT)->id == 2)
 		{
-			mod.refresh();
-			mod.name = "ROTATION";
+			mod.refresh("ROTATION");
 			mod.f5 = rot;
 			(*iT)->modify(mod);
-
-
 		}
 		(*iT)->update();
 	}

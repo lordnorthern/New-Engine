@@ -12,7 +12,6 @@ public:
 	void update();
 	void manifest();
 
-
 	sp_float3 direction;
 	sp_float4 ambient;
 	sp_float4 diffuse;

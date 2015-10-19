@@ -53,8 +53,8 @@ struct modifier
 		
 	}
 
-	void refresh()
+	void refresh(std::string in_name)
 	{
-		b1 = false; b2 = false; f1 = 0.0f; f2 = 0.0f; f3= 0.0f; f4 = 0.0f; f5 = 0.0f; f6 = 0.0f;
+		name = in_name; b1 = false; b2 = false; f1 = 0.0f; f2 = 0.0f; f3 = 0.0f; f4 = 0.0f; f5 = 0.0f; f6 = 0.0f;
 	}
 };
